@@ -7,7 +7,7 @@ REST API. This script implements *just* the server, with specific dependencies a
 Note that for the *client*, usage just requires numpy/json-numpy, and requests; example usage below!
 
 Dependencies:
-    => Server (runs OpenVLA model on GPU): `pip install uvicorn fastapi json-numpy`
+    => Server (runs OpenVLA model on GPU): `pip install uvicorn fastapi json-numpy draccus accelerate`
     => Client: `pip install requests json-numpy`
 
 Client (Standalone) Usage (assuming a server running on 0.0.0.0:8000):
@@ -34,6 +34,7 @@ import json_numpy
 
 json_numpy.patch()
 import json
+import numpy as np
 import logging
 import traceback
 from dataclasses import dataclass
@@ -64,7 +65,7 @@ def get_openvla_prompt(instruction: str, openvla_path: Union[str, Path]) -> str:
 
 # === Server Interface ===
 class OpenVLAServer:
-    def __init__(self, openvla_path: Union[str, Path], attn_implementation: Optional[str] = "flash_attention_2") -> Path:
+    def __init__(self, openvla_path: Union[str, Path], attn_implementation: Optional[str] = "eager" or "flash_attention_2") -> Path:
         """
         A simple server for OpenVLA models; exposes `/act` to predict an action for a given image + instruction.
             => Takes in {"image": np.ndarray, "instruction": str, "unnorm_key": Optional[str]}
@@ -117,7 +118,7 @@ class OpenVLAServer:
             )
             return "error"
 
-    def run(self, host: str = "0.0.0.0", port: int = 8000) -> None:
+    def run(self, host: str = "0.0.0.0", port: int = 8004) -> None:
         self.app = FastAPI()
         self.app.post("/act")(self.predict_action)
         uvicorn.run(self.app, host=host, port=port)
@@ -130,7 +131,7 @@ class DeployConfig:
 
     # Server Configuration
     host: str = "0.0.0.0"                                               # Host IP Address
-    port: int = 8000                                                    # Host Port
+    port: int = 8004                                                    # Host Port
 
     # fmt: on
 
